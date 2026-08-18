@@ -1,0 +1,1054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Household Budget</title>
+<style>
+  :root{
+    --bg:#131024;
+    --card:#1D1935;
+    --card-2:#231F3F;
+    --ink:#ECE9F7;
+    --ink-soft:#A9A1C7;
+    --ink-faint:#766F93;
+    --border:#302A4E;
+    --pine:#5A4BC4;
+    --pine-soft:#262049;
+    --good:#3ECF8E;
+    --good-bg:#173328;
+    --watch:#F0B252;
+    --watch-bg:#3A2C15;
+    --over:#F17272;
+    --over-bg:#3A1E22;
+    --radius:16px;
+    --radius-sm:10px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  h1,h2,h3{font-family:Georgia,"Iowan Old Style","Palatino Linotype",serif; margin:0; font-weight:600;}
+  #app{max-width:520px; margin:0 auto; padding:0 0 88px; min-height:100vh;}
+  .topbar{
+    padding:20px 18px 14px;
+    display:flex; align-items:baseline; justify-content:space-between;
+  }
+  .topbar h1{font-size:21px; color:var(--pine);}
+  .topbar .month{font-size:13px; color:var(--ink-soft);}
+  .topbar-right{display:flex; flex-direction:column; align-items:flex-end; gap:6px;}
+  .screen{padding:0 16px;}
+  .card{
+    background:var(--card);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:16px;
+    margin-bottom:12px;
+  }
+  .card-title{font-size:12px; text-transform:uppercase; letter-spacing:.06em; color:var(--ink-faint); margin-bottom:8px; font-weight:600;}
+  /* dashboard hero */
+  .hero{
+    display:flex; align-items:center; gap:18px;
+    background:var(--pine); color:#fff;
+    border-radius:var(--radius);
+    padding:20px; margin-bottom:12px;
+  }
+  .ring{position:relative; width:96px; height:96px; flex-shrink:0;}
+  .ring svg{transform:rotate(-90deg); width:96px; height:96px;}
+  .ring-bg{fill:none; stroke:rgba(255,255,255,.18); stroke-width:9;}
+  .ring-fg{fill:none; stroke:#fff; stroke-width:9; stroke-linecap:round; transition:stroke-dashoffset .4s;}
+  .ring-label{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:600;}
+  .hero-info{flex:1; min-width:0;}
+  .hero-status{font-size:15px; font-weight:600; margin-bottom:4px;}
+  .hero-sub{font-size:13px; opacity:.85; line-height:1.5;}
+  .status-pill{
+    display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:600; margin-bottom:6px;
+  }
+  .pill-good{background:#fff; color:var(--good);}
+  .pill-watch{background:#fff; color:var(--watch);}
+  .pill-over{background:#fff; color:var(--over);}
+  .stat-row{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px;}
+  .stat{background:var(--card); border:1px solid var(--border); border-radius:var(--radius-sm); padding:12px;}
+  .stat .label{font-size:11px; color:var(--ink-faint); text-transform:uppercase; letter-spacing:.05em; margin-bottom:4px;}
+  .stat .value{font-size:19px; font-weight:600; font-variant-numeric:tabular-nums;}
+  /* category cards */
+  .cat-card{background:var(--card); border:1px solid var(--border); border-radius:var(--radius-sm); padding:13px 14px; margin-bottom:8px;}
+  .cat-top{display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;}
+  .cat-name{font-size:14px; font-weight:600;}
+  .cat-amt{font-size:13px; color:var(--ink-soft); font-variant-numeric:tabular-nums;}
+  .bar-track{height:8px; background:var(--pine-soft); border-radius:999px; overflow:hidden; margin-bottom:6px;}
+  .bar-fill{height:100%; border-radius:999px;}
+  .fill-good{background:var(--good);}
+  .fill-watch{background:var(--watch);}
+  .fill-over{background:var(--over);}
+  .cat-foot{display:flex; justify-content:space-between; font-size:12px; color:var(--ink-faint);}
+  .cat-foot .roll{color:var(--pine);}
+  /* nav */
+  .navbar{
+    position:fixed; bottom:0; left:0; right:0;
+    background:var(--card); border-top:1px solid var(--border);
+    display:flex; max-width:520px; margin:0 auto;
+  }
+  .navbtn{
+    flex:1; padding:10px 4px 12px; text-align:center; background:none; border:none;
+    font-size:11px; color:var(--ink-faint); cursor:pointer; font-family:inherit;
+  }
+  .navbtn .ic{font-size:19px; display:block; margin-bottom:2px;}
+  .navbtn.active{color:var(--pine); font-weight:600;}
+  .fab{
+    position:fixed; bottom:74px; right:calc(50% - 260px + 16px);
+    width:54px; height:54px; border-radius:50%; background:var(--pine); color:#fff;
+    border:none; font-size:26px; box-shadow:0 4px 14px rgba(32,73,59,.35); cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  @media (max-width:552px){ .fab{right:16px;} }
+  /* buttons/forms */
+  button{font-family:inherit;}
+  .btn{
+    display:inline-block; padding:10px 16px; border-radius:10px; border:1px solid var(--border);
+    background:var(--card); color:var(--ink); font-size:14px; font-weight:600; cursor:pointer;
+  }
+  .btn-primary{background:var(--pine); color:#fff; border-color:var(--pine); width:100%; padding:13px; font-size:15px;}
+  .btn-ghost{background:none; border:none; color:var(--pine); font-weight:600; font-size:14px; cursor:pointer; padding:6px;}
+  .btn-sm{padding:6px 10px; font-size:12px; border-radius:8px;}
+  input, select, textarea{
+    width:100%; padding:11px 12px; border-radius:10px; border:1px solid var(--border);
+    background:var(--card-2); font-size:15px; color:var(--ink); font-family:inherit; margin-bottom:12px;
+  }
+  label{font-size:12px; color:var(--ink-soft); font-weight:600; display:block; margin-bottom:5px;}
+  /* modal */
+  .modal-back{
+    position:fixed; inset:0; background:rgba(10,7,18,.65); display:flex; align-items:flex-end;
+    justify-content:center; z-index:50;
+  }
+  .modal{
+    background:var(--bg); width:100%; max-width:520px; border-radius:20px 20px 0 0;
+    padding:18px 18px 26px; max-height:88vh; overflow-y:auto;
+  }
+  .modal-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;}
+  .modal-head h2{font-size:18px;}
+  .close-x{background:none; border:none; font-size:22px; color:var(--ink-faint); cursor:pointer; line-height:1;}
+  /* txn list */
+  .txn-row{display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border);}
+  .txn-row:last-child{border-bottom:none;}
+  .txn-emoji{font-size:20px; width:30px; text-align:center;}
+  .txn-mid{flex:1; min-width:0;}
+  .txn-merchant{font-size:14px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .txn-meta{font-size:12px; color:var(--ink-faint);}
+  .txn-amt{font-size:14px; font-weight:600; font-variant-numeric:tabular-nums;}
+  .txn-excl{opacity:.5;}
+  .flag{display:inline-block; font-size:10px; font-weight:700; background:var(--watch-bg); color:var(--watch); padding:2px 6px; border-radius:6px; margin-left:6px;}
+  .segmented{display:flex; background:var(--card-2); border:1px solid var(--border); border-radius:10px; padding:3px; margin-bottom:12px;}
+  .seg-opt{flex:1; text-align:center; padding:8px 4px; font-size:13px; border-radius:8px; cursor:pointer; color:var(--ink-soft); font-weight:600;}
+  .seg-opt.active{background:var(--pine); color:#fff;}
+  .empty{text-align:center; padding:30px 10px; color:var(--ink-faint); font-size:14px;}
+  .divider-label{font-size:12px; color:var(--ink-faint); font-weight:600; margin:14px 0 6px; text-transform:uppercase; letter-spacing:.05em;}
+  .import-row{background:var(--card); border:1px solid var(--border); border-radius:10px; padding:10px 12px; margin-bottom:8px;}
+  .import-row.flagged{border-color:var(--watch); background:var(--watch-bg);}
+  .import-row .top{display:flex; justify-content:space-between; margin-bottom:6px; font-size:13px;}
+  .import-row select{margin-bottom:0; padding:8px 10px; font-size:13px;}
+  .chip-row{display:flex; gap:6px; flex-wrap:wrap; margin-top:6px;}
+  .chip{padding:5px 10px; border-radius:999px; border:1px solid var(--border); font-size:12px; background:var(--card-2); cursor:pointer;}
+  .chip.sel{background:var(--pine); color:#fff; border-color:var(--pine);}
+  .note{font-size:12px; color:var(--ink-faint); line-height:1.5;}
+  table.hist{width:100%; border-collapse:collapse; font-size:13px;}
+  table.hist th{text-align:left; font-size:11px; color:var(--ink-faint); text-transform:uppercase; padding:4px 0; border-bottom:1px solid var(--border);}
+  table.hist td{padding:8px 0; border-bottom:1px solid var(--border);}
+  table.hist td.num{text-align:right; font-variant-numeric:tabular-nums;}
+  .summary-line{font-size:14px; line-height:1.6; background:var(--pine-soft); border-radius:10px; padding:12px; color:var(--ink);}
+  .btn-add-desktop{display:none;}
+
+  @media (min-width:860px){
+    #app{max-width:980px; padding-bottom:40px;}
+    .topbar{padding:30px 32px 10px; align-items:center;}
+    .topbar h1{font-size:27px;}
+    .topbar-right{display:flex; align-items:center; gap:16px;}
+    .screen{padding:0 32px;}
+    .fab{display:none;}
+    .btn-add-desktop{display:inline-flex; align-items:center; gap:6px; padding:10px 18px;}
+    .navbar{
+      position:static; max-width:none; border-top:none; border-bottom:1px solid var(--border);
+      justify-content:flex-start; gap:6px; padding:4px 32px 14px; margin-bottom:14px; background:none;
+    }
+    .navbtn{flex:none; display:inline-flex; flex-direction:row; align-items:center; gap:7px; padding:9px 16px; border-radius:999px;}
+    .navbtn .ic{margin-bottom:0; font-size:16px;}
+    .navbtn.active{background:var(--pine-soft);}
+    .stat-row{grid-template-columns:repeat(4,1fr);}
+    .cats-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+    .cats-grid .cat-card{margin-bottom:0;}
+    .hero{padding:26px 32px;}
+    .card{padding:20px 24px;}
+    .modal-back{align-items:center;}
+    .modal{max-width:480px; border-radius:20px; max-height:82vh; box-shadow:0 20px 60px rgba(0,0,0,.5);}
+    #csvInput{display:none;}
+    .two-col{display:grid; grid-template-columns:1.3fr 1fr; gap:16px; align-items:start;}
+  }
+</style>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+let CATS = [
+  {id:'home', label:'Home & Bills', emoji:'🏠', budget:3747, rollover:false},
+  {id:'groceries', label:'Groceries', emoji:'🛒', budget:1500, rollover:false},
+  {id:'eating', label:'Eating Out & Fun', emoji:'🍔', budget:750, rollover:false},
+  {id:'shopping', label:'Shopping & Household', emoji:'🛍️', budget:600, rollover:false},
+  {id:'kids', label:'Kids & Activities', emoji:'👨‍👩‍👧‍👦', budget:900, rollover:true},
+  {id:'health', label:'Health & Transportation', emoji:'❤️', budget:695, rollover:true},
+  {id:'subs', label:'Subscriptions', emoji:'📺', budget:150, rollover:true},
+  {id:'unexpected', label:'Unexpected / Irregular', emoji:'🧯', budget:600, rollover:true},
+];
+const PAYCHECK = 9016;
+function totalBudget(){ return CATS.reduce((s,c)=>s+c.budget,0); }
+const RENTAL_MONTHLY = 1400;
+const catById = id => CATS.find(c=>c.id===id);
+
+const PAYMENT_KW = ['autopay','automatic payment','online payment thank you','payment thank you','card payment','cardmember serv','epay','bill pay','autopayment','pymt thank you'];
+const TRANSFER_KW = ['transfer to','transfer from','zelle','venmo','internal transfer',' xfer ','account transfer'];
+const RULES = [
+  {kw:['mortgage','rocket mortgage','wells fargo home','shellpoint','mr cooper'], cat:'home'},
+  {kw:['rocky mountain power','rocky mtn power'], cat:'home'},
+  {kw:['verizon'], cat:'home'},
+  {kw:['direct communications'], cat:'home'},
+  {kw:['eagle mountain city'], cat:'home'},
+  {kw:['comcast','xfinity','century link','centurylink','dominion energy','questar gas'], cat:'home'},
+  {kw:['costco'], uncertain:'Costco'},
+  {kw:['walmart','wal-mart'], uncertain:'Walmart'},
+  {kw:['kroger','smiths food','smith\'s','harmons','sprouts','trader joe','whole foods','safeway','albertsons','aldi','winco'], cat:'groceries'},
+  {kw:['mcdonald','chipotle','starbucks','doordash','uber eats','ubereats','grubhub','pizza','restaurant','grill','cafe','chick-fil-a','wendy','taco bell','burger king','subway','panda express','cafe rio','sonic drive'], cat:'eating'},
+  {kw:['amc ','regal cinema','cinemark','bowling','topgolf','movie'], cat:'eating'},
+  {kw:['amazon'], cat:'shopping'},
+  {kw:['target'], cat:'shopping'},
+  {kw:['cvs','walgreens','pharmacy','clinic','medical','dental','orthodont','urgent care','hospital','optometry'], cat:'health'},
+  {kw:['shell','chevron','exxon','sinclair','maverik','conoco','fuel','gas station','chargepoint','ev charg','tesla supercharg'], cat:'health'},
+  {kw:['geico','progressive','state farm','allstate','auto insurance'], cat:'health'},
+  {kw:['netflix','spotify','hulu','disney+','disney plus','openai','chatgpt','anthropic','claude.ai','apple.com/bill','apple.com bill','amazon prime','newshosting'], cat:'subs'},
+  {kw:['marching band','theater','theatre','football','mountain bike','school activity','activity fee','ymca','club sports'], cat:'kids'},
+];
+
+/* ================= FIREBASE SETUP ================= */
+/* 1. Create a Firebase project at https://console.firebase.google.com
+   2. Enable Firestore (production mode) and Authentication > Email/Password
+   3. In Authentication > Users, add one user with the email and password below
+   4. Project settings > General > Your apps > Web app, copy the config object here */
+const firebaseConfig = {
+  apiKey: "AIzaSyDpGA624khy-dCAeeWXwj94wF9uIH7m_08",
+  authDomain: "our-household-budget-a2ef6.firebaseapp.com",
+  projectId: "our-household-budget-a2ef6",
+  storageBucket: "our-household-budget-a2ef6.firebasestorage.app",
+  messagingSenderId: "561056986597",
+  appId: "1:561056986597:web:b1173a709cc58474db6b0c"
+};
+/* This is the login the shared household password unlocks. Create a Firebase
+   Auth user with this exact email + your chosen password (see README.md). */
+const SHARED_EMAIL = "household@familybudget.app";
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const DOC_REF = () => db.collection('household').doc('data');
+
+let currentUser = null;
+let syncStarted = false;
+let ROLLOVER_START = null;
+
+let state = { transactions: [], rentalLog: [], rules: {}, tab:'home', addOpen:false, importOpen:false, importDraft:null, editTxn:null, historyRange:'this', txnFilter:'all', catManagerOpen:false };
+let saveTimer=null;
+
+function startRealtimeSync(){
+  if(syncStarted) return;
+  syncStarted = true;
+  DOC_REF().onSnapshot(snap=>{
+    if(!snap.exists){
+      ROLLOVER_START = currentMonthKey();
+      DOC_REF().set({categories:CATS, transactions:[], rentalLog:[], rules:{}, settings:{rolloverStart:ROLLOVER_START}});
+      render();
+      return;
+    }
+    const d = snap.data();
+    state.transactions = d.transactions || [];
+    state.rentalLog = d.rentalLog || [];
+    state.rules = d.rules || {};
+    if(d.categories && d.categories.length) CATS = d.categories;
+    ROLLOVER_START = (d.settings && d.settings.rolloverStart) ? d.settings.rolloverStart : currentMonthKey();
+    render();
+  }, err=>{ console.error('sync error', err); });
+}
+async function persist(field, val){
+  try{ await DOC_REF().set({[field]: val}, {merge:true}); }catch(e){ console.error('save failed', e); }
+}
+function saveTransactions(){ persist('transactions', state.transactions); }
+function saveRental(){ persist('rentalLog', state.rentalLog); }
+function saveRules(){ persist('rules', state.rules); }
+function saveCategories(){ persist('categories', CATS); }
+function saveSettings(){ persist('settings', {rolloverStart: ROLLOVER_START}); }
+
+/* ---------- Login gate ---------- */
+function renderLogin(errorMsg){
+  return `
+  <div style="min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;">
+    <div class="card" style="max-width:340px; width:100%;">
+      <h2 style="margin-bottom:4px;">Household Budget</h2>
+      <p class="note" style="margin-bottom:16px;">Enter the shared household password to continue.</p>
+      <input id="login-pw" type="password" placeholder="Household password" autofocus>
+      ${errorMsg ? `<div class="note" style="color:var(--over); margin:-4px 0 12px;">${escapeHtml(errorMsg)}</div>` : ''}
+      <button class="btn-primary" onclick="doLogin()">Unlock</button>
+    </div>
+  </div>`;
+}
+function wireLogin(){
+  const input = document.getElementById('login-pw');
+  if(input){
+    input.focus();
+    input.addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+  }
+}
+function doLogin(){
+  const pw = document.getElementById('login-pw').value;
+  if(!pw){ document.getElementById('app').innerHTML = renderLogin('Enter the password.'); wireLogin(); return; }
+  auth.signInWithEmailAndPassword(SHARED_EMAIL, pw).catch(()=>{
+    document.getElementById('app').innerHTML = renderLogin('That password is incorrect.');
+    wireLogin();
+  });
+}
+function doLogout(){ auth.signOut(); }
+
+auth.onAuthStateChanged(user=>{
+  currentUser = user;
+  if(user) startRealtimeSync();
+  render();
+});
+
+
+function uid(){ return 't'+Math.random().toString(36).slice(2,10)+Date.now().toString(36); }
+function todayStr(){ const d=new Date(); return d.toISOString().slice(0,10); }
+function monthKeyOf(dateStr){ return dateStr.slice(0,7); }
+function currentMonthKey(){ return todayStr().slice(0,7); }
+function fmt(n){ const sign = n<0 ? '-' : ''; return sign+'$'+Math.abs(Math.round(n)).toLocaleString(); }
+function monthLabel(mk){ const [y,m]=mk.split('-').map(Number); return new Date(y,m-1,1).toLocaleString('en-US',{month:'long',year:'numeric'}); }
+function daysInMonth(mk){ const [y,m]=mk.split('-').map(Number); return new Date(y,m,0).getDate(); }
+function dayOfMonth(mk){ const today=new Date(); const [y,m]=mk.split('-').map(Number); if(today.getFullYear()===y && today.getMonth()+1===m) return today.getDate(); return mk<currentMonthKey() ? daysInMonth(mk) : 0; }
+
+function txnEffectiveCategoryAmounts(t){
+  if(t.excluded) return [];
+  if(t.split && t.split.length) return t.split.map(s=>({cat:s.category, amt:s.amount}));
+  if(!t.category) return [];
+  return [{cat:t.category, amt:t.amount}];
+}
+function spendForMonth(catId, mk){
+  let total=0;
+  for(const t of state.transactions){
+    if(monthKeyOf(t.date)!==mk) continue;
+    for(const a of txnEffectiveCategoryAmounts(t)) if(a.cat===catId) total+=a.amt;
+  }
+  return total;
+}
+function allMonthsWithData(){
+  const set = new Set(state.transactions.map(t=>monthKeyOf(t.date)));
+  return [...set].sort();
+}
+function computeRollover(catId){
+  const budget = catById(catId).budget;
+  const start = ROLLOVER_START || currentMonthKey();
+  const months = allMonthsWithData().filter(mk=>mk<currentMonthKey() && mk>=start);
+  let bal=0;
+  for(const mk of months){ bal += budget - spendForMonth(catId, mk); }
+  return bal;
+}
+function catStats(catId){
+  const cat = catById(catId);
+  const mk = currentMonthKey();
+  const spent = spendForMonth(catId, mk);
+  const rollover = cat.rollover ? computeRollover(catId) : 0;
+  const available = cat.budget + rollover;
+  const remaining = available - spent;
+  const pct = available>0 ? Math.max(0, spent/available) : (spent>0?1:0);
+  return {cat, spent, rollover, available, remaining, pct};
+}
+function statusLevel(pct){
+  if(pct>=1) return 'over';
+  if(pct>=0.85) return 'watch';
+  return 'good';
+}
+function monthTotals(mk){
+  let spent=0;
+  for(const c of CATS) spent += spendForMonth(c.id, mk);
+  return spent;
+}
+function overallStatus(){
+  const mk = currentMonthKey();
+  const spent = monthTotals(mk);
+  const dom = dayOfMonth(mk) || 1;
+  const dim = daysInMonth(mk);
+  const projected = spent/dom*dim;
+  let level='good';
+  if(spent>totalBudget() || projected>totalBudget()*1.05) level='over';
+  else if(projected>totalBudget()*0.98) level='watch';
+  return {spent, projected, level, dom, dim, remaining: totalBudget()-spent, daysLeft: dim-dom};
+}
+
+function classify(desc, rawAmount, typeField){
+  const lower = (desc||'').toLowerCase();
+  const typeLower = (typeField||'').toLowerCase();
+  if(typeLower.includes('payment') || typeLower.includes('credit') && rawAmount<0){
+    return {category:null, excluded:true, reason:'Credit card payment', confidence:'rule'};
+  }
+  for(const k of PAYMENT_KW) if(lower.includes(k)) return {category:null, excluded:true, reason:'Credit card payment', confidence:'rule'};
+  for(const k of TRANSFER_KW) if(lower.includes(k)) return {category:null, excluded:true, reason:'Transfer between accounts', confidence:'rule'};
+  for(const key in state.rules){
+    if(lower.includes(key)) return {category:state.rules[key], excluded:false, confidence:'learned', reason:'Remembered from before'};
+  }
+  for(const r of RULES){
+    if(r.kw.some(k=>lower.includes(k))){
+      if(r.uncertain) return {category:null, excluded:false, uncertain:r.uncertain, confidence:'uncertain', reason:r.uncertain+' — needs your input'};
+      return {category:r.cat, excluded:false, confidence:'high'};
+    }
+  }
+  return {category:null, excluded:false, confidence:'low', reason:'Unrecognized merchant'};
+}
+
+function render(){
+  const app = document.getElementById('app');
+  if(!currentUser){ app.innerHTML = renderLogin(); wireLogin(); return; }
+  if(ROLLOVER_START===null){ app.innerHTML = '<div style="min-height:100vh; display:flex; align-items:center; justify-content:center; color:var(--ink-soft); font-size:14px;">Loading your budget…</div>'; return; }
+  let body='';
+  if(state.tab==='home') body = renderHome();
+  else if(state.tab==='transactions') body = renderTransactions();
+  else if(state.tab==='history') body = renderHistory();
+  else if(state.tab==='rental') body = renderRental();
+
+  app.innerHTML = `
+    <div class="topbar">
+      <h1>Our Budget</h1>
+      <div class="topbar-right">
+        <div class="month">${monthLabel(currentMonthKey())}</div>
+        <button class="btn btn-add-desktop" onclick="openAdd()">+ Add transaction</button>
+        <button class="btn-ghost" style="padding:0; font-size:12px;" onclick="doLogout()">Sign out</button>
+      </div>
+    </div>
+    <div class="navbar">
+      <button class="navbtn ${state.tab==='home'?'active':''}" onclick="setTab('home')"><span class="ic">🏡</span>Home</button>
+      <button class="navbtn ${state.tab==='transactions'?'active':''}" onclick="setTab('transactions')"><span class="ic">🧾</span>Transactions</button>
+      <button class="navbtn ${state.tab==='history'?'active':''}" onclick="setTab('history')"><span class="ic">📈</span>History</button>
+      <button class="navbtn ${state.tab==='rental'?'active':''}" onclick="setTab('rental')"><span class="ic">🏘️</span>Rental</button>
+    </div>
+    <div class="screen">${body}</div>
+    <button class="fab" onclick="openAdd()" aria-label="Add transaction">+</button>
+    ${state.addOpen ? renderAddModal() : ''}
+    ${state.importOpen ? renderImportModal() : ''}
+    ${state.catManagerOpen ? renderCatManagerModal() : ''}
+  `;
+  if(state.addOpen) wireAddModal();
+  if(state.importOpen) wireImportModal();
+}
+
+function setTab(t){ state.tab=t; render(); }
+
+function renderHome(){
+  const os = overallStatus();
+  const level = os.level;
+  const pillClass = level==='good'?'pill-good':level==='watch'?'pill-watch':'pill-over';
+  const pillText = level==='good'?'ON TRACK':level==='watch'?'WATCH SPENDING':'OVER BUDGET';
+  const pct = Math.min(1, os.spent/totalBudget());
+  const circumference = 2*Math.PI*38;
+  const dashoffset = circumference*(1-pct);
+  const weeksLeft = Math.max(1, Math.ceil(os.daysLeft/7));
+  const safeWeekly = Math.max(0, os.remaining/weeksLeft);
+
+  let catCards = CATS.map(c=>{
+    const s = catStats(c.id);
+    const lvl = statusLevel(s.pct);
+    const fillClass = lvl==='good'?'fill-good':lvl==='watch'?'fill-watch':'fill-over';
+    const widthPct = Math.min(100, Math.round(s.pct*100));
+    return `<div class="cat-card">
+      <div class="cat-top">
+        <div class="cat-name">${c.emoji} ${c.label}</div>
+        <div class="cat-amt">${fmt(s.spent)} / ${fmt(s.available)}</div>
+      </div>
+      <div class="bar-track"><div class="bar-fill ${fillClass}" style="width:${widthPct}%"></div></div>
+      <div class="cat-foot">
+        <span>${s.remaining>=0?fmt(s.remaining)+' remaining':fmt(Math.abs(s.remaining))+' over'}</span>
+        <span>${c.rollover ? '<span class="roll">+'+fmt(s.rollover)+' saved up</span>' : widthPct+'% used'}</span>
+      </div>
+    </div>`;
+  }).join('');
+
+  const watchList = CATS.filter(c=>{const s=catStats(c.id); return statusLevel(s.pct)==='watch';});
+  const overList = CATS.filter(c=>{const s=catStats(c.id); return statusLevel(s.pct)==='over';});
+
+  return `
+    <div class="hero">
+      <div class="ring">
+        <svg viewBox="0 0 96 96">
+          <circle class="ring-bg" cx="48" cy="48" r="38"></circle>
+          <circle class="ring-fg" cx="48" cy="48" r="38" stroke-dasharray="${circumference}" stroke-dashoffset="${dashoffset}"></circle>
+        </svg>
+        <div class="ring-label">${Math.round(pct*100)}%</div>
+      </div>
+      <div class="hero-info">
+        <div class="status-pill ${pillClass}">${pillText}</div>
+        <div class="hero-status">${fmt(os.spent)} of ${fmt(totalBudget())} spent</div>
+        <div class="hero-sub">${os.daysLeft} day${os.daysLeft===1?'':'s'} left this month · about ${fmt(safeWeekly)}/week to stay on budget</div>
+      </div>
+    </div>
+
+    <div class="stat-row">
+      <div class="stat"><div class="label">Paycheck income</div><div class="value">${fmt(PAYCHECK)}</div></div>
+      <div class="stat"><div class="label">Budget</div><div class="value">${fmt(totalBudget())}</div></div>
+      <div class="stat"><div class="label">Spent so far</div><div class="value">${fmt(os.spent)}</div></div>
+      <div class="stat"><div class="label">Remaining</div><div class="value">${fmt(os.remaining)}</div></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">This week's check-in</div>
+      <div style="font-size:14px; line-height:1.7;">
+        Spent this month: <strong>${fmt(os.spent)}</strong><br>
+        Budget left: <strong>${fmt(os.remaining)}</strong><br>
+        Safe to spend per week: <strong>${fmt(safeWeekly)}</strong> (${weeksLeft} week${weeksLeft===1?'':'s'} left)
+      </div>
+      ${watchList.length ? `<div class="note" style="margin-top:8px;">⚠️ Getting close: ${watchList.map(c=>c.label).join(', ')}</div>`:''}
+      ${overList.length ? `<div class="note" style="margin-top:4px; color:var(--over);">🚫 Over budget: ${overList.map(c=>c.label).join(', ')}</div>`:''}
+    </div>
+
+    <div class="divider-label" style="display:flex; align-items:center; justify-content:space-between;">
+      <span>Categories</span>
+      <button class="btn-ghost" style="padding:0; text-transform:none; letter-spacing:0; font-size:12px;" onclick="openCatManager()">Edit categories</button>
+    </div>
+    <div class="note" style="margin:-4px 0 10px;">Rollover funds have been tracked since ${monthLabel(ROLLOVER_START)}.</div>
+    <div class="cats-grid">${catCards}</div>
+  `;
+}
+
+function renderTransactions(){
+  const mk = currentMonthKey();
+  let list = state.transactions.filter(t=>monthKeyOf(t.date)===mk);
+  if(state.txnFilter==='flagged') list = list.filter(t=>!t.excluded && !t.category && !(t.split&&t.split.length));
+  list = list.slice().sort((a,b)=> b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
+
+  const rows = list.map(t=>{
+    const cat = t.split && t.split.length ? null : (t.category ? catById(t.category) : null);
+    const emoji = t.excluded ? '↔️' : (t.split&&t.split.length ? '🔀' : (cat?cat.emoji:'❓'));
+    const label = t.excluded ? (t.excludeReason||'Excluded') : (t.split&&t.split.length ? 'Split' : (cat?cat.label:'Uncategorized'));
+    return `<div class="txn-row ${t.excluded?'txn-excl':''}" onclick="openEdit('${t.id}')" style="cursor:pointer;">
+      <div class="txn-emoji">${emoji}</div>
+      <div class="txn-mid">
+        <div class="txn-merchant">${escapeHtml(t.merchant||label)}${(!t.category && !t.excluded && !(t.split&&t.split.length))?'<span class="flag">check</span>':''}</div>
+        <div class="txn-meta">${t.date} · ${label}</div>
+      </div>
+      <div class="txn-amt">${fmt(t.amount)}</div>
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="card" style="display:flex; gap:10px;">
+      <button class="btn" style="flex:1" onclick="openAdd()">+ Add transaction</button>
+      <button class="btn" style="flex:1" onclick="triggerCsv()">⬆ Import CSV</button>
+    </div>
+    <input type="file" id="csvInput" accept=".csv" style="display:none" onchange="handleCsvFile(event)">
+    <div class="segmented">
+      <div class="seg-opt ${state.txnFilter==='all'?'active':''}" onclick="setFilter('all')">All (${state.transactions.filter(t=>monthKeyOf(t.date)===mk).length})</div>
+      <div class="seg-opt ${state.txnFilter==='flagged'?'active':''}" onclick="setFilter('flagged')">Needs review</div>
+    </div>
+    <div class="card">
+      ${rows || `<div class="empty">No transactions yet for ${monthLabel(mk)}.<br>Add one or import a CSV.</div>`}
+    </div>
+  `;
+}
+
+function setFilter(f){ state.txnFilter=f; render(); }
+function triggerCsv(){ document.getElementById('csvInput').click(); }
+
+function renderHistory(){
+  const months = allMonthsWithData();
+  const current = currentMonthKey();
+  if(!months.includes(current)) months.push(current);
+  months.sort();
+  let selected;
+  const ranges = {this:1, last:1, last3:3, last6:6, ytd:null};
+  if(state.historyRange==='this') selected=[current];
+  else if(state.historyRange==='last'){ const idx=months.indexOf(current); selected = idx>0?[months[idx-1]]:[]; }
+  else if(state.historyRange==='last3') selected = months.filter(m=>m<=current).slice(-3);
+  else if(state.historyRange==='last6') selected = months.filter(m=>m<=current).slice(-6);
+  else if(state.historyRange==='ytd'){ const yr=current.slice(0,4); selected = months.filter(m=>m.slice(0,4)===yr && m<=current); }
+
+  const rangeBtn = (key,label) => `<div class="seg-opt ${state.historyRange===key?'active':''}" onclick="setHistRange('${key}')">${label}</div>`;
+
+  let rowsHtml = '';
+  let totalBudget=0, totalActual=0;
+  for(const c of CATS){
+    let actual=0;
+    for(const mk of selected) actual += spendForMonth(c.id, mk);
+    const budgetForRange = c.budget * selected.length;
+    totalBudget += budgetForRange; totalActual += actual;
+    const diff = budgetForRange - actual;
+    rowsHtml += `<tr><td>${c.emoji} ${c.label}</td><td class="num">${fmt(budgetForRange)}</td><td class="num">${fmt(actual)}</td><td class="num" style="color:${diff<0?'var(--over)':'var(--good)'}">${diff<0?'-'+fmt(Math.abs(diff)):'+'+fmt(diff)}</td></tr>`;
+  }
+  const monthsCount = Math.max(1, selected.length);
+  const avgMonthly = totalActual/monthsCount;
+
+  return `
+    <div class="segmented">
+      ${rangeBtn('this','This month')}
+      ${rangeBtn('last','Last month')}
+      ${rangeBtn('last3','3 mo')}
+    </div>
+    <div class="segmented">
+      ${rangeBtn('last6','6 mo')}
+      ${rangeBtn('ytd','YTD')}
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="label">Total budget</div><div class="value">${fmt(totalBudget)}</div></div>
+      <div class="stat"><div class="label">Total actual</div><div class="value">${fmt(totalActual)}</div></div>
+      <div class="stat"><div class="label">Avg / month</div><div class="value">${fmt(avgMonthly)}</div></div>
+      <div class="stat"><div class="label">Difference</div><div class="value" style="color:${totalBudget-totalActual<0?'var(--over)':'var(--good)'}">${fmt(totalBudget-totalActual)}</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Budget vs. actual</div>
+      <table class="hist">
+        <tr><th>Category</th><th style="text-align:right">Budget</th><th style="text-align:right">Actual</th><th style="text-align:right">Diff</th></tr>
+        ${rowsHtml}
+      </table>
+    </div>
+    ${state.historyRange==='this' ? renderMonthlyReview() : ''}
+  `;
+}
+function setHistRange(k){ state.historyRange=k; render(); }
+
+function renderMonthlyReview(){
+  const mk = currentMonthKey();
+  const spent = monthTotals(mk);
+  const diff = totalBudget() - spent;
+  let best=null, worstOver=[];
+  const diffs = CATS.map(c=>{
+    const s = spendForMonth(c.id, mk);
+    return {cat:c, diff:c.budget-s, over: s-c.budget};
+  });
+  best = diffs.slice().sort((a,b)=>b.diff-a.diff)[0];
+  worstOver = diffs.filter(d=>d.over>0).sort((a,b)=>b.over-a.over);
+  let summary;
+  if(diff>=0){
+    summary = `You're ${fmt(Math.abs(diff))} under budget so far this month.`;
+  } else {
+    summary = `You're ${fmt(Math.abs(diff))} over budget so far this month.`;
+  }
+  if(worstOver.length){
+    summary += ` ${worstOver[0].cat.label} is ${fmt(worstOver[0].over)} over`;
+    if(best && best.diff>0) summary += `, while ${best.cat.label} is ${fmt(best.diff)} under.`;
+    else summary += `.`;
+  } else if(best && best.diff>0){
+    summary += ` ${best.cat.label} is doing best, ${fmt(best.diff)} under budget.`;
+  }
+  return `
+    <div class="card">
+      <div class="card-title">${monthLabel(mk)} summary</div>
+      <div class="summary-line">${summary}</div>
+    </div>
+  `;
+}
+
+function renderRental(){
+  const mk = currentMonthKey();
+  const yr = mk.slice(0,4);
+  const jan = yr+'-01';
+  let monthsElapsed = (parseInt(mk.slice(5,7))); // Jan=1
+  const ytdReceived = monthsElapsed * RENTAL_MONTHLY;
+  const saved = state.rentalLog.filter(r=>r.date.slice(0,4)===yr && r.type==='savings').reduce((s,r)=>s+r.amount,0);
+  const used = state.rentalLog.filter(r=>r.date.slice(0,4)===yr && r.type==='used').reduce((s,r)=>s+r.amount,0);
+  const unallocated = ytdReceived - saved - used;
+
+  const logRows = state.rentalLog.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,20).map(r=>`
+    <div class="txn-row">
+      <div class="txn-emoji">${r.type==='savings'?'💰':'💸'}</div>
+      <div class="txn-mid">
+        <div class="txn-merchant">${r.type==='savings'?'Moved to savings':'Used for spending'}</div>
+        <div class="txn-meta">${r.date}${r.note?' · '+escapeHtml(r.note):''}</div>
+      </div>
+      <div class="txn-amt">${fmt(r.amount)}</div>
+    </div>`).join('');
+
+  return `
+    <div class="hero" style="background:var(--pine);">
+      <div class="hero-info">
+        <div class="hero-status" style="font-size:22px;">${fmt(RENTAL_MONTHLY)}/mo</div>
+        <div class="hero-sub">Rental income — kept separate from the household budget.</div>
+      </div>
+    </div>
+    <div class="stat-row">
+      <div class="stat"><div class="label">This month</div><div class="value">${fmt(RENTAL_MONTHLY)}</div></div>
+      <div class="stat"><div class="label">YTD received</div><div class="value">${fmt(ytdReceived)}</div></div>
+      <div class="stat"><div class="label">Saved</div><div class="value">${fmt(saved)}</div></div>
+      <div class="stat"><div class="label">Used</div><div class="value">${fmt(used)}</div></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Not yet allocated this year</div>
+      <div style="font-size:20px; font-weight:600;">${fmt(unallocated)}</div>
+      <div class="note" style="margin-top:4px;">Log where this money goes so it's easy to see it's not being spent on regular bills.</div>
+      <div style="display:flex; gap:10px; margin-top:12px;">
+        <button class="btn" style="flex:1" onclick="logRental('savings')">+ Log to savings</button>
+        <button class="btn" style="flex:1" onclick="logRental('used')">+ Log as used</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">Recent activity</div>
+      ${logRows || '<div class="empty">Nothing logged yet.</div>'}
+    </div>
+  `;
+}
+
+function logRental(type){
+  const amtStr = prompt(type==='savings' ? 'How much are you moving to savings?' : 'How much of the rental income was used?');
+  if(amtStr===null) return;
+  const amt = parseFloat(amtStr.replace(/[^0-9.]/g,''));
+  if(!amt || amt<=0){ alert('Enter a valid amount.'); return; }
+  const note = prompt('Optional note (or leave blank):') || '';
+  state.rentalLog.push({id:uid(), date:todayStr(), type, amount:amt, note});
+  saveRental();
+  render();
+}
+
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+
+/* ---------- Add / Edit transaction modal ---------- */
+function openAdd(){ state.addOpen=true; state.editTxn=null; render(); }
+function openEdit(id){ state.addOpen=true; state.editTxn = state.transactions.find(t=>t.id===id); render(); }
+function closeAdd(){ state.addOpen=false; state.editTxn=null; render(); }
+
+function renderAddModal(){
+  const t = state.editTxn;
+  const catOptions = CATS.map(c=>`<option value="${c.id}" ${t&&t.category===c.id?'selected':''}>${c.emoji} ${c.label}</option>`).join('');
+  return `
+  <div class="modal-back" onclick="if(event.target===this) closeAdd()">
+    <div class="modal">
+      <div class="modal-head"><h2>${t?'Edit transaction':'Add transaction'}</h2><button class="close-x" onclick="closeAdd()">&times;</button></div>
+      <label for="f-amount">Amount</label>
+      <input id="f-amount" type="number" step="0.01" inputmode="decimal" placeholder="0.00" value="${t?t.amount:''}">
+      <label for="f-cat">Category</label>
+      <select id="f-cat">
+        <option value="">Choose a category…</option>
+        ${catOptions}
+      </select>
+      <label for="f-merchant">Merchant (optional)</label>
+      <input id="f-merchant" type="text" placeholder="e.g. Costco" value="${t?escapeHtml(t.merchant||''):''}">
+      <label for="f-date">Date</label>
+      <input id="f-date" type="date" value="${t?t.date:todayStr()}">
+      <label for="f-note">Note (optional)</label>
+      <input id="f-note" type="text" placeholder="Anything worth remembering" value="${t?escapeHtml(t.note||''):''}">
+      <div id="f-error" class="note" style="color:var(--over); display:none; margin-bottom:8px;"></div>
+      <button class="btn-primary" onclick="submitAdd()">${t?'Save changes':'Add transaction'}</button>
+      ${t ? `<button class="btn-ghost" style="width:100%; text-align:center; margin-top:8px;" onclick="deleteTxn('${t.id}')">Delete transaction</button>` : ''}
+    </div>
+  </div>`;
+}
+function wireAddModal(){
+  document.getElementById('f-amount').focus();
+}
+function submitAdd(){
+  const amount = parseFloat(document.getElementById('f-amount').value);
+  const category = document.getElementById('f-cat').value;
+  const merchant = document.getElementById('f-merchant').value.trim();
+  const date = document.getElementById('f-date').value || todayStr();
+  const note = document.getElementById('f-note').value.trim();
+  const err = document.getElementById('f-error');
+  if(!amount || amount<=0){ err.textContent='Enter an amount greater than 0.'; err.style.display='block'; return; }
+  if(!category){ err.textContent='Choose a category.'; err.style.display='block'; return; }
+  if(state.editTxn){
+    const t = state.editTxn;
+    t.amount=amount; t.category=category; t.merchant=merchant; t.date=date; t.note=note;
+    t.excluded=false; t.split=null;
+  } else {
+    state.transactions.push({id:uid(), amount, category, merchant, date, note, excluded:false, source:'manual', split:null});
+  }
+  if(merchant){
+    const key = merchant.toLowerCase();
+    if(!state.rules[key]){ state.rules[key]=category; saveRules(); }
+  }
+  saveTransactions();
+  closeAdd();
+}
+function deleteTxn(id){
+  if(!confirm('Delete this transaction?')) return;
+  state.transactions = state.transactions.filter(t=>t.id!==id);
+  saveTransactions();
+  closeAdd();
+}
+
+/* ---------- CSV Import ---------- */
+function parseCSV(text){
+  const rows=[]; let i=0, field='', row=[], inQuotes=false;
+  const push=()=>{row.push(field); field='';};
+  const pushRow=()=>{push(); rows.push(row); row=[];};
+  while(i<text.length){
+    const c=text[i];
+    if(inQuotes){
+      if(c==='"'){ if(text[i+1]==='"'){field+='"'; i++;} else inQuotes=false; }
+      else field+=c;
+    } else {
+      if(c==='"') inQuotes=true;
+      else if(c===',') push();
+      else if(c==='\r'){}
+      else if(c==='\n') pushRow();
+      else field+=c;
+    }
+    i++;
+  }
+  if(field.length || row.length) pushRow();
+  return rows.filter(r=>r.some(c=>c.trim()!==''));
+}
+function normalizeDate(s){
+  s=s.trim();
+  let m = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if(m){ let [_,mo,da,yr]=m; if(yr.length===2) yr='20'+yr; return yr+'-'+mo.padStart(2,'0')+'-'+da.padStart(2,'0'); }
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if(m){ return m[1]+'-'+m[2].padStart(2,'0')+'-'+m[3].padStart(2,'0'); }
+  const d = new Date(s);
+  if(!isNaN(d)) return d.toISOString().slice(0,10);
+  return todayStr();
+}
+function handleCsvFile(evt){
+  const file = evt.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const rows = parseCSV(e.target.result);
+    if(rows.length<2){ alert('This file has no transaction rows.'); return; }
+    const headers = rows[0].map(h=>h.trim().toLowerCase());
+    const findIdx = (preds) => headers.findIndex(h=>preds.some(p=>h.includes(p)));
+    let dateIdx = findIdx(['transaction date']);
+    if(dateIdx<0) dateIdx = findIdx(['date']);
+    const descIdx = findIdx(['description','merchant','name','payee']);
+    const amtIdx = findIdx(['amount']);
+    const debitIdx = findIdx(['debit','withdrawal']);
+    const creditIdx = findIdx(['credit','deposit']);
+    const typeIdx = findIdx(['type']);
+    const hasAmountSource = amtIdx>=0 || debitIdx>=0 || creditIdx>=0;
+    if(dateIdx<0 || descIdx<0 || !hasAmountSource){
+      alert('Could not find date, description, and amount (or debit/credit) columns in this file.');
+      return;
+    }
+    const neededCols = [dateIdx, descIdx, amtIdx, debitIdx, creditIdx].filter(i=>i>=0);
+    const maxCol = Math.max(...neededCols);
+    const draft = [];
+    for(let r=1;r<rows.length;r++){
+      const row = rows[r];
+      if(row.length<=maxCol) continue;
+      const dateRaw = row[dateIdx], descRaw = row[descIdx];
+      let rawAmount, forcedExcluded=false, forcedReason=null;
+      if(amtIdx>=0){
+        const amtRaw = row[amtIdx];
+        if(!descRaw && !amtRaw) continue;
+        rawAmount = parseFloat((amtRaw||'0').replace(/[^0-9.\-]/g,''));
+      } else {
+        const debitRaw = debitIdx>=0 ? (row[debitIdx]||'').trim() : '';
+        const creditRaw = creditIdx>=0 ? (row[creditIdx]||'').trim() : '';
+        if(!descRaw && !debitRaw && !creditRaw) continue;
+        if(debitRaw!==''){
+          rawAmount = parseFloat(debitRaw.replace(/[^0-9.\-]/g,''));
+        } else if(creditRaw!==''){
+          rawAmount = parseFloat(creditRaw.replace(/[^0-9.\-]/g,''));
+          forcedExcluded = true;
+          forcedReason = 'Payment or credit (from the Credit column)';
+        } else {
+          continue;
+        }
+      }
+      if(isNaN(rawAmount)) continue;
+      const typeField = typeIdx>=0 ? row[typeIdx] : '';
+      const cls = classify(descRaw, rawAmount, typeField);
+      const excluded = forcedExcluded || !!cls.excluded;
+      const excludeReason = forcedExcluded ? forcedReason : (cls.reason || null);
+      draft.push({
+        id: uid(),
+        date: normalizeDate(dateRaw),
+        merchant: (descRaw||'').trim(),
+        amount: Math.abs(rawAmount),
+        rawAmount,
+        category: forcedExcluded ? null : cls.category,
+        excluded,
+        excludeReason,
+        uncertain: forcedExcluded ? null : (cls.uncertain || null),
+        confidence: cls.confidence,
+        split: null,
+        source: 'import',
+        note: ''
+      });
+    }
+    if(!draft.length){ alert('No usable transactions were found in this file.'); return; }
+    state.importDraft = draft;
+    state.importOpen = true;
+    render();
+  };
+  reader.readAsText(file);
+  evt.target.value = '';
+}
+
+function renderImportModal(){
+  const draft = state.importDraft || [];
+  const flaggedCount = draft.filter(d=>!d.excluded && (!d.category && !d.uncertain) || d.uncertain).length;
+  const rows = draft.map((d,idx)=>{
+    const catOpts = CATS.map(c=>`<option value="${c.id}" ${d.category===c.id?'selected':''}>${c.emoji} ${c.label}</option>`).join('');
+    const isFlagged = !d.excluded && (!d.category || d.uncertain);
+    return `
+    <div class="import-row ${isFlagged?'flagged':''}" data-idx="${idx}">
+      <div class="top">
+        <strong>${escapeHtml(d.merchant)}</strong>
+        <span>${fmt(d.amount)}</span>
+      </div>
+      <div class="note" style="margin-bottom:6px;">${d.date}${d.excludeReason?' · '+escapeHtml(d.excludeReason):''}</div>
+      <label style="display:flex; align-items:center; gap:6px; font-weight:400; margin-bottom:6px;">
+        <input type="checkbox" style="width:auto; margin:0;" ${d.excluded?'checked':''} onchange="toggleExclude(${idx}, this.checked)">
+        Exclude (transfer / payment, not spending)
+      </label>
+      ${!d.excluded ? `
+        <select onchange="setDraftCat(${idx}, this.value)">
+          <option value="">Choose category…</option>
+          ${catOpts}
+        </select>
+        ${d.uncertain ? `<div class="chip-row">
+          ${CATS.map(c=>`<div class="chip ${d.category===c.id?'sel':''}" onclick="setDraftCat(${idx}, '${c.id}')">${c.emoji} ${c.label}</div>`).join('')}
+        </div>` : ''}
+      ` : ''}
+    </div>`;
+  }).join('');
+
+  return `
+  <div class="modal-back" onclick="if(event.target===this) closeImport()">
+    <div class="modal">
+      <div class="modal-head"><h2>Review import</h2><button class="close-x" onclick="closeImport()">&times;</button></div>
+      <div class="note" style="margin-bottom:10px;">${draft.length} transactions found. ${flaggedCount} need your input, highlighted below. Costco and Walmart always need a category since they sell a mix of things.</div>
+      <div id="importList" style="max-height:52vh; overflow-y:auto; margin-bottom:12px;">${rows}</div>
+      <button class="btn-primary" onclick="confirmImport()">Import ${draft.length} transactions</button>
+    </div>
+  </div>`;
+}
+function wireImportModal(){}
+function renderKeepingScroll(){
+  const modalEl = document.querySelector('.modal');
+  const trackedIds = ['importList','catManagerList'];
+  const modalScroll = modalEl ? modalEl.scrollTop : null;
+  const listScrolls = {};
+  trackedIds.forEach(id=>{ const el=document.getElementById(id); if(el) listScrolls[id]=el.scrollTop; });
+  render();
+  const m2 = document.querySelector('.modal');
+  if(m2 && modalScroll!==null) m2.scrollTop = modalScroll;
+  trackedIds.forEach(id=>{ const el=document.getElementById(id); if(el && listScrolls[id]!==undefined) el.scrollTop = listScrolls[id]; });
+}
+function toggleExclude(idx, val){ state.importDraft[idx].excluded = val; renderKeepingScroll(); }
+function setDraftCat(idx, cat){
+  state.importDraft[idx].category = cat || null;
+  state.importDraft[idx].uncertain = null;
+  const merchant = state.importDraft[idx].merchant;
+  if(merchant && cat){
+    const key = merchant.toLowerCase().slice(0,24);
+    state.rules[key.split(' ').slice(0,2).join(' ')] = cat;
+  }
+  renderKeepingScroll();
+}
+function closeImport(){ state.importOpen=false; state.importDraft=null; render(); }
+
+/* ---------- Category management ---------- */
+function openCatManager(){ state.catManagerOpen = true; render(); }
+function closeCatManager(){ state.catManagerOpen = false; render(); }
+function renderCatManagerModal(){
+  const rows = CATS.map((c,idx)=>`
+    <div class="import-row" style="display:flex; flex-direction:column; gap:8px;">
+      <div style="display:flex; gap:8px;">
+        <input type="text" value="${escapeHtml(c.emoji)}" maxlength="6" style="width:56px; text-align:center; margin-bottom:0;" onchange="updateCatField(${idx},'emoji',this.value)">
+        <input type="text" value="${escapeHtml(c.label)}" style="flex:1; margin-bottom:0;" onchange="updateCatField(${idx},'label',this.value)">
+      </div>
+      <div style="display:flex; gap:10px; align-items:flex-end;">
+        <div style="flex:1;">
+          <label>Monthly budget</label>
+          <input type="number" step="1" min="0" value="${c.budget}" style="margin-bottom:0;" onchange="updateCatField(${idx},'budget',this.value)">
+        </div>
+        <label style="display:flex; align-items:center; gap:6px; font-weight:400; padding-bottom:11px; white-space:nowrap;">
+          <input type="checkbox" style="width:auto; margin:0;" ${c.rollover?'checked':''} onchange="updateCatField(${idx},'rollover',this.checked)">
+          Rolls over
+        </label>
+      </div>
+      <button class="btn-ghost" style="align-self:flex-end; padding:2px;" onclick="deleteCategory(${idx})">Delete category</button>
+    </div>`).join('');
+  return `
+  <div class="modal-back" onclick="if(event.target===this) closeCatManager()">
+    <div class="modal">
+      <div class="modal-head"><h2>Edit categories</h2><button class="close-x" onclick="closeCatManager()">&times;</button></div>
+      <div class="note" style="margin-bottom:10px;">Total monthly budget: <strong>${fmt(totalBudget())}</strong>. Changes apply right away, for both of you.</div>
+      <div class="card" style="background:var(--card-2); padding:12px 14px; margin-bottom:12px;">
+        <label for="rollover-start" style="margin-bottom:4px;">Rollover funds start counting from</label>
+        <input id="rollover-start" type="month" value="${ROLLOVER_START}" style="margin-bottom:4px;" onchange="updateRolloverStart(this.value)">
+        <div class="note">Months before this date won't count toward "saved up" balances below — handy right after importing old bank history, or for categories like Kids &amp; Activities that you track annually rather than every month, so imported or empty past months don't inflate the balance.</div>
+      </div>
+      <div id="catManagerList" style="max-height:50vh; overflow-y:auto; margin-bottom:12px;">${rows}</div>
+      <button class="btn" style="width:100%;" onclick="addCategoryRow()">+ Add category</button>
+    </div>
+  </div>`;
+}
+function updateRolloverStart(val){
+  if(!val) return;
+  ROLLOVER_START = val;
+  saveSettings();
+  renderKeepingScroll();
+}
+function updateCatField(idx, field, value){
+  const c = CATS[idx];
+  if(!c) return;
+  if(field==='budget'){ const n = parseFloat(value); c.budget = isNaN(n) ? 0 : Math.max(0,n); }
+  else if(field==='rollover'){ c.rollover = !!value; }
+  else if(field==='label'){ const v=value.trim(); if(v) c.label=v; }
+  else if(field==='emoji'){ const v=value.trim(); if(v) c.emoji=v; }
+  saveCategories();
+  renderKeepingScroll();
+}
+function addCategoryRow(){
+  const name = prompt('Name for the new category?');
+  if(name===null) return;
+  const trimmed = name.trim();
+  if(!trimmed){ return; }
+  let base = trimmed.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'category';
+  let id = base, n=2;
+  while(CATS.some(c=>c.id===id)){ id = base+'-'+n; n++; }
+  CATS.push({id, label:trimmed, emoji:'📦', budget:0, rollover:false});
+  saveCategories();
+  renderKeepingScroll();
+}
+function deleteCategory(idx){
+  if(CATS.length<=1){ alert('You need at least one category.'); return; }
+  const c = CATS[idx];
+  const hasTxns = state.transactions.some(t=> t.category===c.id || (t.split && t.split.some(s=>s.category===c.id)));
+  const msg = hasTxns
+    ? `"${c.label}" has past transactions. Deleting it removes it from the dashboard and budget totals, but the transactions themselves stay in your history. Delete anyway?`
+    : `Delete "${c.label}"?`;
+  if(!confirm(msg)) return;
+  CATS.splice(idx,1);
+  saveCategories();
+  renderKeepingScroll();
+}
+function confirmImport(){
+  const draft = state.importDraft || [];
+  const missing = draft.filter(d=>!d.excluded && !d.category);
+  if(missing.length){
+    if(!confirm(missing.length+' transaction(s) still have no category and will be marked as uncategorized. Import anyway?')) return;
+  }
+  for(const d of draft){
+    state.transactions.push({
+      id: d.id, date: d.date, merchant: d.merchant, amount: d.amount,
+      category: d.category, excluded: d.excluded, excludeReason: d.excludeReason,
+      split: null, source: 'import', note: ''
+    });
+  }
+  saveTransactions();
+  saveRules();
+  closeImport();
+}
+
+render();
+</script>
+</body>
+</html>
